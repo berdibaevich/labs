@@ -8,3 +8,6 @@ wheels/
 
 # Virtual environments
 .venv
+
+frameworkless-blog-api/why.py
+tcp-socket-labs/
