@@ -1,6 +1,78 @@
 import os
 
 
+class FileStream:
+    def __init__(self, fd: int, closed_callable, chunk_size: int=1024):
+        self._fd = fd
+        self._chunk_size = chunk_size
+        self._buffer = b""
+        self._closed_callable = closed_callable
+
+    @property
+    def closed(self):
+        return self._closed_callable()
+
+    def __iter__(self):
+        return self
+    
+    def __next__(self):
+        if self.closed:
+            raise ValueError("ValueError: I/O operation on closed file.")
+
+        while True:
+            if (index := self._buffer.find(b"\n")) != -1:
+                line = self._buffer[:index].decode("utf-8")
+                self._buffer = self._buffer[index + 1 :]
+                return line
+            
+            chunk = os.read(self._fd, self._chunk_size)
+            if chunk:
+                self._buffer += chunk
+            else:
+                if self._buffer:
+                    line = self._buffer.decode("utf-8")
+                    self._buffer = b""
+                    return line
+                
+                raise StopIteration
+
+
+class Open:
+    FLAGS = {
+        "r": os.O_RDONLY,
+        "w": os.O_WRONLY
+    }
+
+    def __init__(self, path: str, *, mode: str="r", chunk_size: int=1024):
+        self.path = path
+        self.mode = mode
+        self.chunk_size = chunk_size
+        self._fd = None
+        self._stream = None
+        self._closed = True
+
+
+    def __enter__(self):
+        self._fd = os.open(self.path, self.FLAGS[self.mode])
+        self._closed = False
+
+        self._stream = FileStream(
+            self._fd,
+            closed_callable=lambda: self._closed, 
+            chunk_size=self.chunk_size
+        )
+        return self._stream
+    
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        if not self._closed and self._stream is not None:
+            self._closed = True
+            os.close(self._fd)
+        return False
+
+
+
+
 def open_(path, *, mode="r", chunk_size=1024):
     """Generator, works like as open() function"""
     
