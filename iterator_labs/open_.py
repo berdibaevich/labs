@@ -2,15 +2,16 @@ import os
 
 
 class FileStream:
-    def __init__(self, fd: int, closed_callable, chunk_size: int=1024):
+    def __init__(self, fd: int, chunk_size: int=1024):
         self._fd = fd
         self._chunk_size = chunk_size
         self._buffer = b""
-        self._closed_callable = closed_callable
+        self.closed = False
 
-    @property
-    def closed(self):
-        return self._closed_callable()
+    def close(self):
+        if not self.closed:
+            os.close(self._fd)
+            self.closed = True
 
     def __iter__(self):
         return self
@@ -49,25 +50,21 @@ class Open:
         self.chunk_size = chunk_size
         self._fd = None
         self._stream = None
-        self._closed = True
 
 
     def __enter__(self):
         self._fd = os.open(self.path, self.FLAGS[self.mode])
-        self._closed = False
 
         self._stream = FileStream(
             self._fd,
-            closed_callable=lambda: self._closed, 
             chunk_size=self.chunk_size
         )
         return self._stream
     
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
-        if not self._closed and self._stream is not None:
-            self._closed = True
-            os.close(self._fd)
+        if self._stream:
+            self._stream.close()
         return False
 
 
