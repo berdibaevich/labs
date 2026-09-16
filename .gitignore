@@ -109,3 +109,5 @@ db.sqlite3
 */migrations/[0-9]*_initial.py
 media/
 dump.rdb
+=======
+rust/target
