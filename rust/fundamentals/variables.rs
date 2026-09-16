@@ -1,6 +1,0 @@
-
-
-fn main(){
-    let x = 10;
-    println!("Value is {x}")
-}
