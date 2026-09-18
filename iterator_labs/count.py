@@ -12,3 +12,10 @@ class Count:
         val = self._current
         self._current += self._step
         return val
+    
+
+
+def count_(start=0, step=1):
+    while True:
+        yield start
+        start += step 
